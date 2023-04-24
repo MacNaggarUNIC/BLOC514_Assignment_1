@@ -1,0 +1,155 @@
+{
+ "cells": [
+  {
+   "cell_type": "markdown",
+   "id": "1c48b731",
+   "metadata": {},
+   "source": [
+    "# Preparing the dataset"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 124,
+   "id": "57d7697e",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "   Address 1  Address 2  Address 3  Address 4  Address 5  Address 6  Address 7\n",
+      "0          5        NaN          0          6          0          4          0\n",
+      "1          3        0.0          3          0          0          0          3\n",
+      "2          0        0.0          0          0          6          0          8\n",
+      "3          4        NaN          0          7          0          3          0\n",
+      "4          3        0.0          4          0          0          0          0\n",
+      "5          0        0.0          0          0          0          9          7\n",
+      "6          0        0.0          0          0          7         10          0\n",
+      "7          0        0.0          0          0          0          8          9\n",
+      "8         24       87.0         15         21          0         24         32\n",
+      "9          6       16.0          1          5          0          3          2\n"
+     ]
+    }
+   ],
+   "source": [
+    "import pandas as pd\n",
+    "import csv\n",
+    "\n",
+    "# Load dataset\n",
+    "url = r\"C:\\Users\\macna\\OneDrive\\School\\UNIC\\Spring 2023\\BLOC-514\\Assignment 1\\Part B1 Data.csv\"\n",
+    "\n",
+    "# Add NaN values for the '?' for User A => Address #2 & User D => Address #2\n",
+    "df = pd.read_csv(url, header=None, na_values='?')\n",
+    "\n",
+    "# Displaying the dataset as provided in assignment\n",
+    "# Note that the left most column represents users where 0 = User A, 1 = User B, 2 = User C, and so on...\n",
+    "df.columns = ['Address 1', 'Address 2', 'Address 3', 'Address 4', 'Address 5', 'Address 6', 'Address 7']\n",
+    "pd.set_option('display.width', 120)\n",
+    "\n",
+    "print(df)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 125,
+   "id": "52884f50",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "             0    1    2    3    4    5     6    7     8     9\n",
+      "Address 1  5.0  3.0  0.0  4.0  3.0  0.0   0.0  0.0  24.0   6.0\n",
+      "Address 2  NaN  0.0  0.0  NaN  0.0  0.0   0.0  0.0  87.0  16.0\n",
+      "Address 3  0.0  3.0  0.0  0.0  4.0  0.0   0.0  0.0  15.0   1.0\n",
+      "Address 4  6.0  0.0  0.0  7.0  0.0  0.0   0.0  0.0  21.0   5.0\n",
+      "Address 5  0.0  0.0  6.0  0.0  0.0  0.0   7.0  0.0   0.0   0.0\n",
+      "Address 6  4.0  0.0  0.0  3.0  0.0  9.0  10.0  8.0  24.0   3.0\n",
+      "Address 7  0.0  3.0  8.0  0.0  0.0  7.0   0.0  9.0  32.0   2.0\n"
+     ]
+    }
+   ],
+   "source": [
+    "# The transposed version of the data, which is suited for the weighting algorithm used in the KNNImputer Class\n",
+    "df_tranposed = df.T\n",
+    "print(df_tranposed)"
+   ]
+  },
+  {
+   "cell_type": "markdown",
+   "id": "282d0c4c",
+   "metadata": {},
+   "source": [
+    "# Finding the missing values"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 142,
+   "id": "0070a233",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "           User A  User B  User C  User D  User E  User F  User G  User H  User I  User J\n",
+      "Address 1       5       3       0       4       3       0       0       0      24       6\n",
+      "Address 2       4       0       0       3       0       0       0       0      87      16\n",
+      "Address 3       0       3       0       0       4       0       0       0      15       1\n",
+      "Address 4       6       0       0       7       0       0       0       0      21       5\n",
+      "Address 5       0       0       6       0       0       0       7       0       0       0\n",
+      "Address 6       4       0       0       3       0       9      10       8      24       3\n",
+      "Address 7       0       3       8       0       0       7       0       9      32       2\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Using KNNImputer class from scikit-learn machine learning library\n",
+    "# KNNImputer is a data transform that is first configured based on the method used to estimate the missing values.\n",
+    "from numpy import isnan\n",
+    "from sklearn.impute import KNNImputer\n",
+    "\n",
+    "# Define imputer with the n_neighbors, weights, and similarity metric I deem to be best for assignment data\n",
+    "imputer = KNNImputer(n_neighbors=4, weights='distance', metric='nan_euclidean')\n",
+    "\n",
+    "# Fit on the transposed dataset\n",
+    "imputer.fit(df_tranposed)\n",
+    "\n",
+    "# Impute the missing values\n",
+    "Xtrans = imputer.transform(df_tranposed)\n",
+    "\n",
+    "# Display the transformed dataset with imputed values\n",
+    "columns = ['User A', 'User B', 'User C', 'User D', 'User E', 'User F', 'User G', 'User H', 'User I', 'User J']\n",
+    "rows = ['Address 1', 'Address 2', 'Address 3', 'Address 4', 'Address 5', 'Address 6', 'Address 7']\n",
+    "Xtrans_df = pd.DataFrame(Xtrans, index=rows, columns=columns)\n",
+    "\n",
+    "# Round the values to nearest integer of transactions, as similarity metric provides a real number value as opposed to integer\n",
+    "print(Xtrans_df.round().astype(int))"
+   ]
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3 (ipykernel)",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.10.9"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
